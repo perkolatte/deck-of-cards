@@ -70,4 +70,19 @@ async function draw(drawCount = 1, deckId = "new") {
   return await makeCall(drawCall, errorText);
 }
 
-console.log(draw());
+(async function () {
+  try {
+    let response = await draw();
+    console.log(response);
+    const deckId = response.deck_id;
+    let card = response.cards[0];
+    console.log(`${card.value} of ${card.suit}`);
+
+    response = await draw(1, deckId);
+    card = response.cards[0];
+    console.log(response);
+    console.log(`${card.value} of ${card.suit}`);
+  } catch (error) {
+    console.error("Error drawing cards:", error);
+  }
+})();
