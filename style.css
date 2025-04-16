@@ -3,3 +3,97 @@ body {
   margin: 0;
   padding: 0;
 }
+
+#game-container {
+  max-width: 800px; /* Set a maximum width for the container */
+  margin: 0 auto; /* Center the container horizontally */
+  padding: 20px; /* Add padding for spacing */
+  text-align: center; /* Center-align content */
+  width: 40vw; /* Set responsive width for the game container */
+  max-width: 200px; /* Ensure it doesn't exceed a reasonable size */
+}
+
+#deck {
+  text-align: center;
+  margin: 50px 0 20px; /* Adjust spacing within the container */
+  position: relative; /* Enable positioning of child elements */
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2); /* Add subtle shadow for depth */
+  transition: box-shadow 0.2s; /* Smooth transition for shadow changes */
+}
+
+#back-of-card {
+  display: none; /* Initially hide the back-of-card image */
+  margin: 0 auto;
+  width: 100%; /* Match the size of the game container */
+  height: auto; /* Maintain aspect ratio */
+  image-rendering: auto; /* Enable anti-aliasing */
+  -webkit-font-smoothing: antialiased; /* Improve anti-aliasing for WebKit browsers */
+  position: relative; /* Ensure it stays at the base of the stack */
+  z-index: 1; /* Place it below drawn cards */
+}
+
+#controls {
+  text-align: center;
+  margin: 20px 0;
+}
+
+button {
+  background-color: #222; /* Dark poker table color */
+  color: #fff; /* White text */
+  border: 2px solid #fff; /* White border */
+  border-radius: 5px; /* Rounded corners */
+  padding: 10px 20px;
+  font-size: 16px;
+  font-family: "Arial", sans-serif;
+  cursor: pointer;
+  transition: background-color 0.3s, transform 0.2s;
+}
+
+button:hover {
+  background-color: #444; /* Slightly lighter on hover */
+  transform: scale(1.05); /* Slight zoom effect */
+}
+
+button:active {
+  background-color: #555; /* Even lighter when clicked */
+  transform: scale(1); /* Reset zoom */
+}
+
+.card {
+  position: absolute; /* Position cards within the container */
+  top: 0; /* Start stacking from the top */
+  left: 50%; /* Center the cards horizontally */
+  transform: translateX(-50%); /* Adjust for centering */
+  width: 100%; /* Match the size of the game container */
+  height: auto; /* Maintain aspect ratio */
+  image-rendering: auto; /* Enable anti-aliasing */
+  -webkit-font-smoothing: antialiased; /* Improve anti-aliasing for WebKit browsers */
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2); /* Add subtle shadow for depth */
+  transition: transform 0.2s, box-shadow 0.2s; /* Smooth transition for hover effect */
+}
+
+.card:hover {
+  transform: translate(-50%, 0) scale(1.05) rotate(var(--rotation, 0deg)); /* Slight zoom on hover */
+  box-shadow: 0 6px 10px rgba(0, 0, 0, 0.3); /* Enhance shadow on hover */
+}
+
+#drawn-cards-container {
+  position: relative; /* Enable positioning of child elements */
+  height: 300px; /* Set a fixed height to contain the stack */
+  margin: 20px 0; /* Add spacing above the deck */
+}
+
+/* Remove media queries for #back-of-card and .card */
+
+.deck-card {
+  position: absolute; /* Position cards within the deck container */
+  width: 100%; /* Match the size of the deck */
+  height: auto; /* Maintain aspect ratio */
+  image-rendering: auto; /* Enable anti-aliasing */
+  -webkit-font-smoothing: antialiased; /* Improve anti-aliasing for WebKit browsers */
+  transition: opacity 0.2s; /* Smooth transition for hiding cards */
+  backface-visibility: hidden; /* Ensure smooth flipping */
+  transform-style: preserve-3d; /* Enable 3D transformations */
+}
+
+/* Remove animation-related styles */
