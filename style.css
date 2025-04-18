@@ -74,13 +74,21 @@ button:active {
 
 .card:hover {
   transform: translate(-50%, 0) scale(1.05) rotate(var(--rotation, 0deg)); /* Slight zoom on hover */
-  box-shadow: 0 6px 10px rgba(0, 0, 0, 0.3); /* Enhance shadow on hover */
+  box-shadow: 0 6px 10px rgba(0, 0, 0, 0.3); /* Enhance shadow on hover   */
 }
 
 #drawn-cards-container {
   position: relative; /* Enable positioning of child elements */
   height: 300px; /* Set a fixed height to contain the stack */
   margin: 20px 0; /* Add spacing above the deck */
+  cursor: default; /* Default cursor when not clickable */
+  transition: transform 0.2s, box-shadow 0.2s; /* Smooth transition for hover effect */
+}
+
+#drawn-cards-container:hover {
+  cursor: pointer; /* Change cursor to pointer when clickable */
+  transform: scale(1.05); /* Slightly enlarge the container on hover */
+  /* box-shadow: 0 6px 10px rgba(0, 0, 0, 0.3); Add shadow to indicate interactivity */
 }
 
 /* Remove media queries for #back-of-card and .card */
@@ -94,6 +102,39 @@ button:active {
   transition: opacity 0.2s; /* Smooth transition for hiding cards */
   backface-visibility: hidden; /* Ensure smooth flipping */
   transform-style: preserve-3d; /* Enable 3D transformations */
+  cursor: default; /* Default cursor for non-top cards */
+  transition: transform 0.2s, box-shadow 0.2s; /* Smooth transition for mouseover effect */
+}
+
+.deck-card.top-card:hover {
+  cursor: pointer; /* Indicate clickability */
+  transform: rotate(var(--random-rotation)) scale(1.1) !important; /* Remove translate */
+  box-shadow: 0 8px 12px rgba(0, 0, 0, 0.4); /* Enhance shadow on hover */
+  transition: transform 0.2s, box-shadow 0.2s;
 }
 
 /* Remove animation-related styles */
+
+/* Responsive layout: stack vertically by default, side by side on larger screens */
+@media (min-width: 600px) {
+  #game-container {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: flex-start;
+  }
+  /* Ensure each pile gets its own space */
+  #drawn-cards-container,
+  #deck {
+    flex: 1;
+    margin: 20px;
+  }
+  /* Optionally, center the images inside each container */
+  #drawn-cards-container,
+  #deck {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-around;
+    /* align-items: center; */
+  }
+}
