@@ -96,7 +96,8 @@ function displayCard(card) {
   setStyles(cardImage, {
     top: `${randomTopOffset}px`,
     left: `calc(50% + ${randomLeftOffset}px)`,
-    transform: `translate(-50%, 0) rotate(${randomRotation}deg)`,
+    // Updated transform to vertically center with translate(-50%, -50%)
+    transform: `translate(-50%, 0%) rotate(${randomRotation}deg)`,
     zIndex: `${drawnCardsContainer.children.length + 1}`, // Ensure the card is on top
   });
 
@@ -120,8 +121,8 @@ function createVisualDeck() {
     card.setAttribute("data-pin-nopin", "true"); // Prevent Pinterest saving
 
     // Generate small random offsets and rotation for a natural look
-    const randomTopOffset = Math.random() * 2 - 1; // Vertical offset between -1px and 1px
-    const randomLeftOffset = Math.random() * 2 - 1; // Horizontal offset between -1px and 1px
+    const randomTopOffset = Math.random() * 4 - 2; // Vertical offset between -1px and 1px
+    const randomLeftOffset = Math.random() * 4 - 2; // Horizontal offset between -1px and 1px
     const randomRotation = Math.random() * 4 - 2; // Rotation between -2deg and 2deg
 
     // Apply styles for positioning
@@ -211,54 +212,82 @@ document.addEventListener("DOMContentLoaded", async () => {
   // Add event listener to the deck to handle clicks on the topmost card
   deck.addEventListener("click", (event) => {
     const topCard = document.querySelector(".deck-card.top-card");
-    if (topCard && event.target === topCard) {
+    // Only trigger if the top card is clicked (or contains the event target)
+    if (topCard && topCard.contains(event.target)) {
       handleDrawCard();
     }
   });
 
-  // Add event listener to update the top card's random rotation on each mouseover
-  deck.addEventListener("mouseover", (event) => {
-    const topCard = document.querySelector(".deck-card.top-card");
-    if (topCard && event.target === topCard) {
-      const newAngle = Math.random() * 20 - 10; // Random angle between -10deg and 10deg
-      topCard.style.setProperty("--random-rotation", `${newAngle}deg`);
-      // Update the inline transform to persist the new rotation immediately.
-      topCard.style.transform = `rotate(${newAngle}deg)`;
-    }
-  });
+  // -------------------------------
+  // Consolidated Event Listeners
+  // -------------------------------
 
-  // Add event listener for non-top deck cards to update rotation on mouseover
-  deck.addEventListener("mouseover", (event) => {
+  // Helper to check if an element is a top deck card
+  function isTopCard(element) {
+    return (
+      element.classList.contains("deck-card") &&
+      element.classList.contains("top-card")
+    );
+  }
+
+  // Consolidated handler for deck mouse events (for deck cards)
+  function handleDeckMouseover(event) {
     const target = event.target;
-    if (
-      target.classList.contains("deck-card") &&
-      !target.classList.contains("top-card")
-    ) {
-      const newAngle = Math.random() * 20 - 10; // Rotation between -10deg and 10deg
-      target.style.transform = `rotate(${newAngle}deg)`;
+    if (target.classList.contains("deck-card")) {
+      if (isTopCard(target)) {
+        // For the top card: include centering, a random translation offset, scale, and rotation.
+        const newAngle = Math.random() * 20 - 10; // -10deg to 10deg
+        const randX = Math.random() * 10 - 5; // Random X offset between -5px and 5px
+        const randY = Math.random() * 10 - 5; // Random Y offset between -5px and 5px
+        target.style.setProperty("--random-rotation", `${newAngle}deg`);
+        target.style.transform = `translate(0%, 0%) translate(${randX}px, ${randY}px) scale(1.1) rotate(${newAngle}deg)`;
+      } else {
+        // For non-top deck cards: apply a small random translation and rotation.
+        const newAngle = Math.random() * 20 - 10; // -10deg to 10deg
+        const randX = Math.random() * 10 - 5; // Random X offset between -5px and 5px
+        const randY = Math.random() * 10 - 5; // Random Y offset between -5px and 5px
+        target.style.transform = `translate(${randX}px, ${randY}px) rotate(${newAngle}deg)`;
+      }
     }
-  });
+  }
 
-  // Add a mouseout listener to "freeze" the rotation when the mouse leaves.
-  deck.addEventListener("mouseout", (event) => {
-    const topCard = document.querySelector(".deck-card.top-card");
-    if (topCard && event.target === topCard) {
-      // On mouseout, remove any :hover effects by setting the inline transform (already updated) as final.
-      const finalRotation = topCard.style.getPropertyValue("--random-rotation");
-      topCard.style.transform = `rotate(${finalRotation})`;
+  function handleDeckMouseout(event) {
+    const target = event.target;
+    if (isTopCard(target)) {
+      // Freeze top card to its last assigned rotation.
+      const finalRotation = target.style.getPropertyValue("--random-rotation");
+      target.style.transform = `rotate(${finalRotation})`;
     }
-  });
+  }
 
-  // Add event listener to the drawn cards container to handle shuffling
+  // Consolidated handlers for the drawn cards container (the drawn pile)
+  function handleDrawnCardsMouseover(event) {
+    if (event.target === drawnCardsContainer) {
+      // When hovering on the container as a whole, scale the entire pile.
+      drawnCardsContainer.style.transform = "scale(1.1)";
+      drawnCardsContainer.style.transition = "transform 0.2s ease-in-out";
+    } else if (event.target.classList.contains("card")) {
+      // When hovering an individual drawn card, apply a slight random rotation and translation.
+      const newAngle = Math.random() * 20 - 10; // -10deg to 10deg
+      const randX = Math.random() * 10 - 5; // -2px to 2px
+      const randY = Math.random() * 10 - 5; // -2px to 2px
+      // Maintain centering using translate(-50%, -50%)
+      event.target.style.transform = `translate(-50%, 0%) translate(${randX}px, ${randY}px) rotate(${newAngle}deg)`;
+    }
+  }
+
+  function handleDrawnCardsMouseout(event) {
+    if (event.target === drawnCardsContainer) {
+      // Reset the container transform
+      drawnCardsContainer.style.transform = "";
+    }
+    // For individual card mouseout, leave the last transform intact ("freeze" it)
+  }
+
+  // Remove any duplicate handlers and attach the consolidated ones:
+  deck.addEventListener("mouseover", handleDeckMouseover);
+  deck.addEventListener("mouseout", handleDeckMouseout);
   drawnCardsContainer.addEventListener("click", handleShuffleDeck);
-
-  // Add event listener to the drawn cards container to update rotation on every mouseover for drawn cards
-  drawnCardsContainer.addEventListener("mouseover", (event) => {
-    if (event.target && event.target.classList.contains("card")) {
-      // Generate a new random angle between -20deg and 20deg
-      const newRotation = Math.random() * 20 - 10;
-      // Update the transform to keep the translation and apply the new rotation
-      event.target.style.transform = `translate(-50%, 0) rotate(${newRotation}deg)`;
-    }
-  });
+  drawnCardsContainer.addEventListener("mouseover", handleDrawnCardsMouseover);
+  drawnCardsContainer.addEventListener("mouseout", handleDrawnCardsMouseout);
 });
