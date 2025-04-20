@@ -19,14 +19,28 @@ function setStyles(element, styles) {
   Object.assign(element.style, styles);
 }
 
+// Refactor repetitive logic for creating DOM elements
+function createElement(tag, attributes = {}, styles = {}) {
+  const element = document.createElement(tag);
+  Object.entries(attributes).forEach(([key, value]) => {
+    element.setAttribute(key, value);
+  });
+  setStyles(element, styles);
+  return element;
+}
+
 // Create an image element for a card using its JSON data
 function getCardImage(json) {
-  const img = document.createElement("img");
-  img.src = json.image; // Set the card image URL
-  img.alt = `${json.value} of ${json.suit}`; // Set alt text for accessibility
-  img.classList.add("card"); // Add the "card" class for styling
-  img.setAttribute("data-pin-nopin", "true"); // Prevent Pinterest saving
-  return img;
+  return createElement(
+    "img",
+    {
+      src: json.image,
+      alt: `${json.value} of ${json.suit}`,
+      class: "card",
+      "data-pin-nopin": "true",
+    },
+    {}
+  );
 }
 
 // Make an API call and handle errors
@@ -48,15 +62,15 @@ async function makeCall(call, errorText) {
 // Create a new deck of cards with optional parameters
 async function createDeck(
   shuffled = true,
-  deckCount,
-  jokersEnabled = false,
-  partial
+  deckCount = 1
+  // jokersEnabled = false,
+  // partial = []
 ) {
   const shufflePath = shuffled ? "shuffle/" : ""; // Add "shuffle/" if the deck should be shuffled
   const parameters = [
     deckCount ? `deck_count=${deckCount}` : "", // Add deck count if provided
-    jokersEnabled ? `jokers_enabled=${jokersEnabled}` : "", // Add jokers if enabled
-    partial ? `cards=${partial.join(",")}` : "", // Add specific cards if provided
+    // jokersEnabled ? `jokers_enabled=${jokersEnabled}` : "", // Add jokers if enabled
+    // partial.length ? `cards=${partial.join(",")}` : "", // Add specific cards if provided
   ]
     .filter(Boolean) // Remove empty parameters
     .join("&"); // Join parameters to string with "&"
@@ -64,62 +78,61 @@ async function createDeck(
   const createDeckCall = `https://deckofcardsapi.com/api/deck/new/${shufflePath}${
     parameters ? "?" + parameters : ""
   }`;
-  return makeCall(createDeckCall, "Failed to create deck."); // Call the API and handle errors
+  return makeCall(createDeckCall, "Failed to create a new deck of cards."); // Improved error message
 }
 
-// Shuffle an existing deck
-async function shuffle(deckId, onlyRemaining = true) {
-  const shuffleCall = `https://deckofcardsapi.com/api/deck/${deckId}/shuffle/?remaining=${onlyRemaining}`;
-  return makeCall(shuffleCall, "Failed to shuffle deck."); // Call the API to shuffle the deck
-}
-
-// Draw a specified number of cards from a deck
+// Uncommented the `draw` function since it is being used in `Handlers.handleDrawCard`
 async function draw(drawCount = 1, deckId = "new") {
   const drawCall = `https://deckofcardsapi.com/api/deck/${deckId}/draw/?count=${drawCount}`;
   return makeCall(drawCall, "Failed to draw cards."); // Call the API to draw cards
 }
 
+async function shuffle(deckId, onlyRemaining = true) {
+  const shuffleCall = `https://deckofcardsapi.com/api/deck/${deckId}/shuffle/?remaining=${onlyRemaining}`;
+  return makeCall(shuffleCall, "Failed to shuffle deck."); // Call the API to shuffle the deck
+}
+
 // Cache DOM elements to avoid repeated lookups
-const deck = document.getElementById("deck");
+const deckContainer = document.getElementById("deck");
 const drawnCardsContainer = document.getElementById("drawn-cards-container");
 
 // Utility function to safely update the cursor style
-function updateCursorStyle(container, condition, styleIfTrue, styleIfFalse) {
-  container.style.cursor = condition ? styleIfTrue : styleIfFalse;
+function updateCursorStyle(element, condition, cursorIfTrue, cursorIfFalse) {
+  element.style.cursor = condition ? cursorIfTrue : cursorIfFalse;
 }
 
 // Simplify repetitive logic for applying random transformations
 function generateRandomTransform(maxOffset, maxRotation) {
-  const x = Math.random() * maxOffset * 2 - maxOffset;
-  const y = Math.random() * maxOffset * 2 - maxOffset;
-  const r = Math.random() * maxRotation * 2 - maxRotation;
-  return { x, y, r };
+  const offsetX = Math.random() * maxOffset * 2 - maxOffset;
+  const offsetY = Math.random() * maxOffset * 2 - maxOffset;
+  const rotation = Math.random() * maxRotation * 2 - maxRotation;
+  return { offsetX, offsetY, rotation };
 }
 
 // Display a drawn card in the drawn cards container
-function displayCard(card) {
-  const cardImage = getCardImage(card);
+function displayCard(cardData) {
+  const cardImageElement = getCardImage(cardData);
 
   // Generate random offsets and rotation for a natural look
   const {
-    x: randomLeftOffset,
-    y: randomTopOffset,
-    r: randomRotation,
+    offsetX: randomOffsetX,
+    offsetY: randomOffsetY,
+    rotation: randomRotation,
   } = generateRandomTransform(20, 40);
 
   // Apply styles for stacking and positioning
-  setStyles(cardImage, {
+  setStyles(cardImageElement, {
     position: "absolute",
     top: "50%",
     left: "50%",
-    transform: `translate(-50%, -50%) translate(${randomLeftOffset}px, ${randomTopOffset}px) rotate(${randomRotation}deg)`,
+    transform: `translate(-50%, -50%) translate(${randomOffsetX}px, ${randomOffsetY}px) rotate(${randomRotation}deg)`,
     zIndex: `${drawnCardsContainer.children.length + 1}`, // Ensure the card is on top
     transition:
       "transform 0.4s cubic-bezier(0.32, 1, 0.23, 1), box-shadow 0.2s ease", // Smooth animations
   });
 
   // Add the card to the container
-  drawnCardsContainer.appendChild(cardImage);
+  drawnCardsContainer.appendChild(cardImageElement);
 
   // Show the container if it was hidden
   drawnCardsContainer.classList.add("active");
@@ -127,49 +140,53 @@ function displayCard(card) {
 
 // Create a visual representation of the deck with 52 back-of-card images
 function createVisualDeck() {
-  const deck = document.getElementById("deck");
-  deck.innerHTML = ""; // Clear the deck container
+  deckContainer.innerHTML = ""; // Clear the deck container
 
-  for (let i = 0; i < 52; i++) {
-    const card = document.createElement("img");
-    card.src = "images/back.png"; // Use the back-of-card image
-    card.alt = "Shuffle deck, face down"; // Set alt text for accessibility
-    card.classList.add("deck-card"); // Add the "deck-card" class for styling
-    card.setAttribute("data-pin-nopin", "true"); // Prevent Pinterest saving
-
-    // Generate small random offsets and rotation for a natural look
-    const randomTopOffset = Math.random() * 4 - 2; // Vertical offset between -1px and 1px
-    const randomLeftOffset = Math.random() * 4 - 2; // Horizontal offset between -1px and 1px
+  for (let cardIndex = 0; cardIndex < 52; cardIndex++) {
+    const randomOffsetY = Math.random() * 4 - 2; // Vertical offset between -2px and 2px
+    const randomOffsetX = Math.random() * 4 - 2; // Horizontal offset between -2px and 2px
     const randomRotation = Math.random() * 4 - 2; // Rotation between -2deg and 2deg
 
-    // Apply styles for positioning
-    const base = `translate(-50%, -50%) translate(${randomLeftOffset}px, ${randomTopOffset}px) rotate(${randomRotation}deg)`;
-    setStyles(card, {
-      position: "absolute",
-      top: "50%",
-      left: "50%",
-      transform: base,
-      zIndex: `${52 - i}`, // Stack cards in reverse order
-    });
-    card.dataset.baseTransform = base; // Store the base transform for hover effects
-    deck.appendChild(card); // Add the card to the deck container
+    const baseTransform = `translate(-50%, -50%) translate(${randomOffsetX}px, ${randomOffsetY}px) rotate(${randomRotation}deg)`;
+
+    const cardElement = createElement(
+      "img",
+      {
+        src: "images/back.png",
+        alt: "Shuffle deck, face down",
+        class: "deck-card",
+        "data-pin-nopin": "true",
+      },
+      {
+        position: "absolute",
+        top: "50%",
+        left: "50%",
+        transform: baseTransform,
+        zIndex: `${52 - cardIndex}`,
+      }
+    );
+
+    cardElement.dataset.baseTransform = baseTransform; // Store the base transform for hover effects
+    deckContainer.appendChild(cardElement); // Add the card to the deck container
   }
 
-  // Ensure the topmost card is marked as "top-card"
   updateVisualDeck(52); // Pass the full deck count
 }
 
 // Update the visual deck to reflect the remaining cards
-function updateVisualDeck(remainingCards) {
-  const deckCards = Array.from(
+function updateVisualDeck(remainingCardCount) {
+  const deckCardElements = Array.from(
     document.querySelectorAll(".deck-card")
   ).reverse(); // Topmost card is last
-  deckCards.forEach((card) => card.classList.remove("top-card"));
+  deckCardElements.forEach((cardElement) =>
+    cardElement.classList.remove("top-card")
+  );
 
-  deckCards.forEach((card, index) => {
-    card.style.display = index < remainingCards ? "block" : "none"; // Hide cards that are no longer in the deck
-    if (index === remainingCards - 1) {
-      card.classList.add("top-card"); // Mark the topmost card
+  deckCardElements.forEach((cardElement, cardIndex) => {
+    cardElement.style.display =
+      cardIndex < remainingCardCount ? "block" : "none"; // Hide cards that are no longer in the deck
+    if (cardIndex === remainingCardCount - 1) {
+      cardElement.classList.add("top-card"); // Mark the topmost card
     }
   });
 }
@@ -181,28 +198,32 @@ document.addEventListener("DOMContentLoaded", async () => {
   // Hover module for random card transformations
   const Hover = {
     randomTransform({ maxOffset = 10, maxRotation = 10 } = {}) {
-      const x = Math.random() * maxOffset * 2 - maxOffset;
-      const y = Math.random() * maxOffset * 2 - maxOffset;
-      const r = Math.random() * maxRotation * 2 - maxRotation;
-      return { x, y, r };
+      const offsetX = Math.random() * maxOffset * 2 - maxOffset;
+      const offsetY = Math.random() * maxOffset * 2 - maxOffset;
+      const rotation = Math.random() * maxRotation * 2 - maxRotation;
+      return { offsetX, offsetY, rotation };
     },
-    applyTransform(el, { x, y, r }, scale = 1) {
-      const base = el.dataset.baseTransform || "translate(-50%, -50%)";
-      const newTransform = `${base} translate(${x}px, ${y}px) scale(${scale}) rotate(${r}deg)`;
-      el.style.transform = newTransform;
-      el.dataset.lastTransform = newTransform; // Store the last applied transform
+    applyTransform(element, { offsetX, offsetY, rotation }, scale = 1) {
+      const baseTransform =
+        element.dataset.baseTransform || "translate(-50%, -50%)";
+      const newTransform = `${baseTransform} translate(${offsetX}px, ${offsetY}px) scale(${scale}) rotate(${rotation}deg)`;
+      element.style.transform = newTransform;
+      element.dataset.lastTransform = newTransform; // Store the last applied transform
     },
   };
 
   // Handlers object: manages event listeners and interactions
   const Handlers = {
-    deckEl: deck,
-    drawnEl: drawnCardsContainer,
+    deckElement: deckContainer,
+    drawnCardsElement: drawnCardsContainer,
     attachListeners() {
       // Attach click listeners for drawing and shuffling cards
-      this.deckEl.addEventListener("click", this.handleDrawCard.bind(this));
-      this.drawnEl.addEventListener("click", (event) => {
-        if (this.drawnEl.children.length > 0) {
+      this.deckElement.addEventListener(
+        "click",
+        this.handleDrawCard.bind(this)
+      );
+      this.drawnCardsElement.addEventListener("click", (event) => {
+        if (this.drawnCardsElement.children.length > 0) {
           this.handleShuffleDeck(event); // Only shuffle if there are cards in the drawn pile
         }
       });
@@ -238,39 +259,63 @@ document.addEventListener("DOMContentLoaded", async () => {
     },
     attachHover() {
       // Add hover effects for deck and drawn cards
-      this.deckEl.addEventListener("mouseover", (e) => {
-        const target = e.target.closest(".deck-card");
-        if (!target) return;
-        const isTop = target.classList.contains("top-card");
-        const { x, y, r } = Hover.randomTransform({
-          maxOffset: isTop ? 10 : 5,
-          maxRotation: isTop ? 20 : 10,
+      this.deckElement.addEventListener("mouseover", (e) => {
+        const targetCard = e.target.closest(".deck-card");
+        if (!targetCard) return;
+        const isTopCard = targetCard.classList.contains("top-card");
+        const { offsetX, offsetY, rotation } = Hover.randomTransform({
+          maxOffset: isTopCard ? 10 : 5,
+          maxRotation: isTopCard ? 20 : 10,
         });
-        Hover.applyTransform(target, { x, y, r }, isTop ? 1.1 : 1);
+        Hover.applyTransform(
+          targetCard,
+          { offsetX, offsetY, rotation },
+          isTopCard ? 1.1 : 1
+        );
       });
-      this.deckEl.addEventListener("mouseout", (e) => {
-        const target = e.target.closest(".deck-card");
-        if (!target) return;
-        target.style.transform =
-          target.dataset.lastTransform || target.dataset.baseTransform;
+
+      this.deckElement.addEventListener("mouseout", (e) => {
+        const targetCard = e.target.closest(".deck-card");
+        if (!targetCard) return;
+
+        // Extract the translate and rotate values from the lastTransform or baseTransform
+        const transform =
+          targetCard.dataset.lastTransform ||
+          targetCard.dataset.baseTransform ||
+          "translate(-50%, -50%)";
+        const updatedTransform = transform.replace(
+          /scale\([^)]+\)/,
+          "scale(1)"
+        ); // Reset only the scale
+        targetCard.style.transform = updatedTransform;
       });
-      this.drawnEl.addEventListener("mouseover", (e) => {
-        if (e.target === this.drawnEl) {
-          this.drawnEl.style.transform = "scale(1.1)";
+
+      this.drawnCardsElement.addEventListener("mouseover", (e) => {
+        if (e.target === this.drawnCardsElement) {
+          this.drawnCardsElement.style.transform = "scale(1.1)";
         } else if (e.target.classList.contains("card")) {
-          const { x, y, r } = Hover.randomTransform({
+          const { offsetX, offsetY, rotation } = Hover.randomTransform({
             maxOffset: 5,
             maxRotation: 10,
           });
-          Hover.applyTransform(e.target, { x, y, r }, 1);
+          Hover.applyTransform(e.target, { offsetX, offsetY, rotation }, 1);
         }
       });
-      this.drawnEl.addEventListener("mouseout", (e) => {
-        if (e.target === this.drawnEl) {
-          this.drawnEl.style.transform = "";
+
+      this.drawnCardsElement.addEventListener("mouseout", (e) => {
+        if (e.target === this.drawnCardsElement) {
+          this.drawnCardsElement.style.transform = "";
         } else if (e.target.classList.contains("card")) {
-          e.target.style.transform =
-            e.target.dataset.lastTransform || e.target.dataset.baseTransform;
+          // Extract the translate and rotate values from the lastTransform or baseTransform
+          const transform =
+            e.target.dataset.lastTransform ||
+            e.target.dataset.baseTransform ||
+            "translate(-50%, -50%)";
+          const updatedTransform = transform.replace(
+            /scale\([^)]+\)/,
+            "scale(1)"
+          ); // Reset only the scale
+          e.target.style.transform = updatedTransform;
         }
       });
     },

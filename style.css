@@ -29,6 +29,28 @@ body {
   }
 }
 
+/* Always horizontal in landscape */
+@media (orientation: landscape) {
+  #game-container {
+    display: flex; /* Ensure flexbox is applied */
+    flex-direction: row !important; /* Force horizontal layout */
+    gap: 24px; /* Adjust gap for better spacing */
+    justify-content: space-around;
+    align-items: center;
+  }
+
+  #drawn-cards-container,
+  #deck {
+    width: clamp(140px, 30dvh, 200px); /* Scale by height for landscape */
+    height: clamp(100px, 25dvh, 150px); /* Adjust height for landscape */
+  }
+
+  .card,
+  .deck-card {
+    width: 100%; /* Ensure cards fit within the container */
+  }
+}
+
 /* -----------------------------------
    Body Background
 ----------------------------------- */
@@ -184,25 +206,22 @@ body {
 /* Small landscape (S-land) */
 @media (orientation: landscape) and (max-width: 599px) {
   #game-container {
-    flex-direction: row;
-    gap: 24px;
-    padding: 16px;
-    padding-left: 16px;
-    padding-right: 16px;
+    flex-direction: row; /* Ensure horizontal layout */
+    gap: 16px; /* Adjust gap for smaller screens */
+    padding: 12px; /* Reduce padding for small landscape */
     justify-content: space-around;
     align-items: center;
   }
 
   #drawn-cards-container,
   #deck {
-    /* scale by height on small landscapes */
-    width: clamp(140px, 30dvh, 180px);
-    height: 45dvh;
+    width: clamp(120px, 25dvh, 160px); /* Scale by height for small landscape */
+    height: clamp(80px, 20dvh, 120px); /* Adjust height for landscape */
   }
 
   .card,
   .deck-card {
-    width: 100%;
+    width: 100%; /* Ensure cards fit within the container */
   }
 }
 
@@ -222,25 +241,48 @@ body {
 /* Tablet landscape & small desktop (M-land) */
 @media (min-width: 600px) and (orientation: landscape) {
   #game-container {
-    flex-direction: row;
-    gap: 32px;
-    padding: 32px;
-    padding-left: 32px;
-    padding-right: 32px;
+    flex-direction: row; /* Ensure horizontal layout */
+    gap: 24px; /* Adjust gap for medium screens */
+    padding: 24px; /* Increase padding for medium landscape */
     justify-content: space-around;
     align-items: center;
   }
 
   #drawn-cards-container,
   #deck {
-    /* scale by height on medium landscapes */
-    width: clamp(180px, 35dvh, 240px);
-    height: 60dvh;
+    width: clamp(
+      160px,
+      30dvh,
+      200px
+    ); /* Scale by height for medium landscape */
+    height: clamp(100px, 25dvh, 150px); /* Adjust height for medium landscape */
   }
 
   .card,
   .deck-card {
-    width: 100%;
+    width: 100%; /* Ensure cards fit within the container */
+  }
+}
+
+/* Large desktop (L) */
+@media (min-width: 900px) and (orientation: landscape) {
+  #game-container {
+    flex-direction: row; /* Ensure horizontal layout */
+    gap: 32px; /* Adjust gap for large screens */
+    padding: 32px; /* Increase padding for large landscape */
+    justify-content: space-around;
+    align-items: center;
+  }
+
+  #drawn-cards-container,
+  #deck {
+    width: 240px; /* Fixed width for large screens */
+    height: 320px; /* Fixed height for large screens */
+  }
+
+  .card,
+  .deck-card {
+    width: 100%; /* Ensure cards fit within the container */
   }
 }
 
@@ -281,8 +323,7 @@ body {
   object-fit: contain; /* Preserve aspect ratio */
   box-shadow: none;
   filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
-  transition: transform 0.4s cubic-bezier(0.42, 1, 0.32, 1),
-    box-shadow 0.2s ease;
+  transition: transform 0.4s cubic-bezier(0.32, 1, 0.1, 1), box-shadow 0.2s ease;
 }
 
 /* Hover effects for drawn cards */
