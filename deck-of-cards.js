@@ -16,7 +16,7 @@
 
 // Utility function to set multiple styles on an element
 function setStyles(element, styles) {
-  Object.assign(element.style, styles);
+  Object.assign(element.style, styles); // Apply all styles from the styles object to the element
 }
 
 // Create an image element for a card using the card's JSON data
@@ -40,7 +40,7 @@ async function makeCall(call, errorText) {
     }
     return await response.json(); // Parse and return the JSON response
   } catch (error) {
-    console.error(errorText, error);
+    console.error(errorText, error); // Log the error for debugging
     throw error; // Re-throw the error for further handling
   }
 }
@@ -64,19 +64,19 @@ async function createDeck(
   const createDeckCall = `https://deckofcardsapi.com/api/deck/new/${shufflePath}${
     parameters ? "?" + parameters : ""
   }`;
-  return makeCall(createDeckCall, "Failed to create deck.");
+  return makeCall(createDeckCall, "Failed to create deck."); // Call the API and handle errors
 }
 
 // Shuffle an existing deck
 async function shuffle(deckId, onlyRemaining = true) {
   const shuffleCall = `https://deckofcardsapi.com/api/deck/${deckId}/shuffle/?remaining=${onlyRemaining}`;
-  return makeCall(shuffleCall, "Failed to shuffle deck.");
+  return makeCall(shuffleCall, "Failed to shuffle deck."); // Call the API to shuffle the deck
 }
 
 // Draw a specified number of cards from a deck
 async function draw(drawCount = 1, deckId = "new") {
   const drawCall = `https://deckofcardsapi.com/api/deck/${deckId}/draw/?count=${drawCount}`;
-  return makeCall(drawCall, "Failed to draw cards.");
+  return makeCall(drawCall, "Failed to draw cards."); // Call the API to draw cards
 }
 
 // Display a drawn card in the drawn cards container
@@ -94,11 +94,13 @@ function displayCard(card) {
 
   // Apply styles for stacking and positioning
   setStyles(cardImage, {
-    top: `${randomTopOffset}px`,
-    left: `calc(50% + ${randomLeftOffset}px)`,
-    // Updated transform to vertically center with translate(-50%, -50%)
-    transform: `translate(-50%, 0%) rotate(${randomRotation}deg)`,
+    position: "absolute",
+    top: "50%",
+    left: "50%",
+    transform: `translate(-50%, -50%) translate(${randomLeftOffset}px, ${randomTopOffset}px) rotate(${randomRotation}deg)`,
     zIndex: `${drawnCardsContainer.children.length + 1}`, // Ensure the card is on top
+    transition:
+      "transform 0.4s cubic-bezier(0.32, 1, 0.23, 1), box-shadow 0.2s ease", // Smooth animations
   });
 
   // Add the card to the container
@@ -126,13 +128,15 @@ function createVisualDeck() {
     const randomRotation = Math.random() * 4 - 2; // Rotation between -2deg and 2deg
 
     // Apply styles for positioning
+    const base = `translate(-50%, -50%) translate(${randomLeftOffset}px, ${randomTopOffset}px) rotate(${randomRotation}deg)`;
     setStyles(card, {
-      top: `${randomTopOffset}px`,
-      left: `${randomLeftOffset}px`,
-      transform: `rotate(${randomRotation}deg)`,
+      position: "absolute",
+      top: "50%",
+      left: "50%",
+      transform: base,
       zIndex: `${52 - i}`, // Stack cards in reverse order
     });
-
+    card.dataset.baseTransform = base; // Store the base transform for hover effects
     deck.appendChild(card); // Add the card to the deck container
   }
 
@@ -148,13 +152,9 @@ function updateVisualDeck(remainingCards) {
   deckCards.forEach((card) => card.classList.remove("top-card"));
 
   deckCards.forEach((card, index) => {
-    card.style.display = index < remainingCards ? "block" : "none";
-    // Remove any JS box-shadow update. All shadow styling is defined in CSS.
-
+    card.style.display = index < remainingCards ? "block" : "none"; // Hide cards that are no longer in the deck
     if (index === remainingCards - 1) {
-      card.classList.add("top-card");
-      const randomAngle = Math.random() * 10 - 5;
-      card.style.setProperty("--random-rotation", `${randomAngle}deg`);
+      card.classList.add("top-card"); // Mark the topmost card
     }
   });
 }
@@ -163,131 +163,110 @@ function updateVisualDeck(remainingCards) {
 document.addEventListener("DOMContentLoaded", async () => {
   const deck = document.getElementById("deck");
   const drawnCardsContainer = document.getElementById("drawn-cards-container");
-  let deckId = null; // Store the deck ID
+  let deckId = null;
 
-  // Create a new deck when the page loads
-  try {
-    const deckData = await createDeck();
-    deckId = deckData.deck_id; // Save the deck ID
-    createVisualDeck(); // Create the visual deck
-  } catch (error) {
-    console.error("Error creating deck:", error);
-  }
+  // Hover module for random card transformations
+  const Hover = {
+    randomTransform({ maxOffset = 10, maxRotation = 10 } = {}) {
+      const x = Math.random() * maxOffset * 2 - maxOffset;
+      const y = Math.random() * maxOffset * 2 - maxOffset;
+      const r = Math.random() * maxRotation * 2 - maxRotation;
+      return { x, y, r };
+    },
+    applyTransform(el, { x, y, r }, scale = 1) {
+      const base = el.dataset.baseTransform || "translate(-50%, -50%)";
+      el.style.transform = `${base} translate(${x}px, ${y}px) scale(${scale}) rotate(${r}deg)`;
+    },
+  };
 
-  async function handleDrawCard() {
-    try {
-      if (deckId) {
-        // Draw a card from the deck
-        const response = await draw(1, deckId);
-        updateVisualDeck(response.remaining); // Update the visual deck
-        displayCard(response.cards[0]); // Display the drawn card
-
-        if (response.remaining === 0) {
-          // Enable shuffle hover effect when all cards are drawn
-          drawnCardsContainer.style.cursor = "pointer";
+  // Handlers object: manages event listeners and interactions
+  const Handlers = {
+    deckEl: deck,
+    drawnEl: drawnCardsContainer,
+    attachListeners() {
+      // Attach click listeners for drawing and shuffling cards
+      this.deckEl.addEventListener("click", this.handleDrawCard.bind(this));
+      this.drawnEl.addEventListener("click", (event) => {
+        if (this.drawnEl.children.length > 0) {
+          this.handleShuffleDeck(event); // Only shuffle if there are cards in the drawn pile
         }
+      });
+    },
+    async handleDrawCard() {
+      try {
+        if (deckId) {
+          const response = await draw(1, deckId);
+          updateVisualDeck(response.remaining);
+          displayCard(response.cards[0]);
+          drawnCardsContainer.style.cursor =
+            response.remaining === 0 ? "pointer" : "default";
+        }
+      } catch (error) {
+        console.error("Error drawing card:", error);
       }
-    } catch (error) {
-      console.error("Error drawing card:", error);
-    }
-  }
-
-  async function handleShuffleDeck() {
-    try {
-      if (deckId) {
-        // Shuffle the deck and reset the game
-        await shuffle(deckId, false);
-        const drawnCardsContainer = document.getElementById(
-          "drawn-cards-container"
-        );
-        drawnCardsContainer.innerHTML = ""; // Clear the drawn cards container
-        drawnCardsContainer.classList.remove("active"); // Hide the container
-        createVisualDeck(); // Reset the visual deck
+    },
+    async handleShuffleDeck() {
+      try {
+        if (deckId) {
+          await shuffle(deckId, false);
+          drawnCardsContainer.innerHTML = ""; // Clear the drawn cards container
+          drawnCardsContainer.classList.remove("active"); // Hide the container
+          createVisualDeck(); // Reset the visual deck
+        }
+      } catch (error) {
+        console.error("Error shuffling deck:", error);
       }
-    } catch (error) {
-      console.error("Error shuffling deck:", error);
-    }
-  }
-
-  // Add event listener to the deck to handle clicks on the topmost card
-  deck.addEventListener("click", (event) => {
-    const topCard = document.querySelector(".deck-card.top-card");
-    // Only trigger if the top card is clicked (or contains the event target)
-    if (topCard && topCard.contains(event.target)) {
-      handleDrawCard();
-    }
-  });
-
-  // -------------------------------
-  // Consolidated Event Listeners
-  // -------------------------------
-
-  // Helper to check if an element is a top deck card
-  function isTopCard(element) {
-    return (
-      element.classList.contains("deck-card") &&
-      element.classList.contains("top-card")
-    );
-  }
-
-  // Consolidated handler for deck mouse events (for deck cards)
-  function handleDeckMouseover(event) {
-    const target = event.target;
-    if (target.classList.contains("deck-card")) {
-      if (isTopCard(target)) {
-        // For the top card: include centering, a random translation offset, scale, and rotation.
-        const newAngle = Math.random() * 20 - 10; // -10deg to 10deg
-        const randX = Math.random() * 10 - 5; // Random X offset between -5px and 5px
-        const randY = Math.random() * 10 - 5; // Random Y offset between -5px and 5px
-        target.style.setProperty("--random-rotation", `${newAngle}deg`);
-        target.style.transform = `translate(0%, 0%) translate(${randX}px, ${randY}px) scale(1.1) rotate(${newAngle}deg)`;
-      } else {
-        // For non-top deck cards: apply a small random translation and rotation.
-        const newAngle = Math.random() * 20 - 10; // -10deg to 10deg
-        const randX = Math.random() * 10 - 5; // Random X offset between -5px and 5px
-        const randY = Math.random() * 10 - 5; // Random Y offset between -5px and 5px
-        target.style.transform = `translate(${randX}px, ${randY}px) rotate(${newAngle}deg)`;
+    },
+    attachHover() {
+      // Add hover effects for deck and drawn cards
+      this.deckEl.addEventListener("mouseover", (e) => {
+        const target = e.target.closest(".deck-card");
+        if (!target) return;
+        const isTop = target.classList.contains("top-card");
+        const { x, y, r } = Hover.randomTransform({
+          maxOffset: isTop ? 10 : 5,
+          maxRotation: isTop ? 20 : 10,
+        });
+        Hover.applyTransform(target, { x, y, r }, isTop ? 1.1 : 1);
+      });
+      this.deckEl.addEventListener("mouseout", (e) => {
+        const target = e.target.closest(".deck-card");
+        if (!target) return;
+        target.style.transform =
+          target.dataset.baseTransform || "translate(-50%, -50%)";
+      });
+      this.drawnEl.addEventListener("mouseover", (e) => {
+        if (e.target === this.drawnEl) {
+          this.drawnEl.style.transform = "scale(1.1)";
+        } else if (e.target.classList.contains("card")) {
+          const { x, y, r } = Hover.randomTransform({
+            maxOffset: 5,
+            maxRotation: 10,
+          });
+          Hover.applyTransform(e.target, { x, y, r }, 1);
+        }
+      });
+      this.drawnEl.addEventListener("mouseout", (e) => {
+        if (e.target === this.drawnEl) {
+          this.drawnEl.style.transform = "";
+        } else if (e.target.classList.contains("card")) {
+          e.target.style.transform =
+            e.target.dataset.baseTransform || "translate(-50%, -50%)";
+        }
+      });
+    },
+    async init() {
+      try {
+        const deckData = await createDeck();
+        deckId = deckData.deck_id;
+        createVisualDeck();
+        this.attachListeners();
+        this.attachHover();
+      } catch (error) {
+        console.error("Error initializing deck:", error);
       }
-    }
-  }
+    },
+  };
 
-  function handleDeckMouseout(event) {
-    const target = event.target;
-    if (isTopCard(target)) {
-      // Freeze top card to its last assigned rotation.
-      const finalRotation = target.style.getPropertyValue("--random-rotation");
-      target.style.transform = `rotate(${finalRotation})`;
-    }
-  }
-
-  // Consolidated handlers for the drawn cards container (the drawn pile)
-  function handleDrawnCardsMouseover(event) {
-    if (event.target === drawnCardsContainer) {
-      // When hovering on the container as a whole, scale the entire pile.
-      drawnCardsContainer.style.transform = "scale(1.1)";
-      drawnCardsContainer.style.transition = "transform 0.2s ease-in-out";
-    } else if (event.target.classList.contains("card")) {
-      // When hovering an individual drawn card, apply a slight random rotation and translation.
-      const newAngle = Math.random() * 20 - 10; // -10deg to 10deg
-      const randX = Math.random() * 10 - 5; // -2px to 2px
-      const randY = Math.random() * 10 - 5; // -2px to 2px
-      // Maintain centering using translate(-50%, -50%)
-      event.target.style.transform = `translate(-50%, 0%) translate(${randX}px, ${randY}px) rotate(${newAngle}deg)`;
-    }
-  }
-
-  function handleDrawnCardsMouseout(event) {
-    if (event.target === drawnCardsContainer) {
-      // Reset the container transform
-      drawnCardsContainer.style.transform = "";
-    }
-    // For individual card mouseout, leave the last transform intact ("freeze" it)
-  }
-
-  // Remove any duplicate handlers and attach the consolidated ones:
-  deck.addEventListener("mouseover", handleDeckMouseover);
-  deck.addEventListener("mouseout", handleDeckMouseout);
-  drawnCardsContainer.addEventListener("click", handleShuffleDeck);
-  drawnCardsContainer.addEventListener("mouseover", handleDrawnCardsMouseover);
-  drawnCardsContainer.addEventListener("mouseout", handleDrawnCardsMouseout);
+  Handlers.init(); // Initialize the Handlers
 });

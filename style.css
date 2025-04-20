@@ -94,12 +94,14 @@ body {
   height: auto;
   max-height: 100%;
   max-width: clamp(120px, 60dvw, 300px);
-  transition: transform 0.2s, box-shadow 0.2s;
+  transition: transform 0.4s cubic-bezier(0.32, 1, 0.23, 1),
+    box-shadow 0.2s ease; /* Smooth animations */
   cursor: pointer;
 }
 
 .card:hover {
-  transform: translateX(-50%) scale(1.05);
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.3));
+  transform: translate(-50%, -50%) scale(1.05); /* Add scaling on hover */
 }
 
 /* -----------------------------------
