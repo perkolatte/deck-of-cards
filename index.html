@@ -17,6 +17,7 @@
     <svg
       xmlns="http://www.w3.org/2000/svg"
       style="position: absolute; width: 0; height: 0"
+      aria-hidden="true"
     >
       <filter id="sharpen">
         <!-- Increase center weight to 11 and set divisor to 3 -->
@@ -28,9 +29,9 @@
         />
       </filter>
     </svg>
-    <div id="game-container">
-      <div id="drawn-cards-container"></div>
-      <div id="deck">
+    <div id="game-container" role="main">
+      <div id="drawn-cards-container" aria-label="Drawn Cards"></div>
+      <div id="deck" aria-label="Deck of Cards">
         <img
           id="back-of-card"
           src="images/back.png"

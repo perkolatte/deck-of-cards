@@ -264,3 +264,46 @@ body {
   transition: transform 0.4s cubic-bezier(0.32, 1, 0.23, 1),
     box-shadow 0.2s ease;
 }
+
+/* Shared styles for all cards */
+.card,
+.deck-card {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: auto;
+  height: auto;
+  max-height: 100%;
+  max-width: clamp(120px, 60dvw, 300px);
+  border-radius: 8px; /* Rounded edges */
+  display: block;
+  object-fit: contain; /* Preserve aspect ratio */
+  box-shadow: none;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+  transition: transform 0.4s cubic-bezier(0.42, 1, 0.32, 1),
+    box-shadow 0.2s ease;
+}
+
+/* Hover effects for drawn cards */
+.card:hover {
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.3));
+  transform: translate(-50%, -50%) scale(1.05);
+}
+
+/* Hover effects for the top card in the deck */
+.deck-card.top-card:hover {
+  transform: translate(-50%, -50%) scale(1.1);
+}
+
+/* Responsive scaling for game container */
+#game-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-evenly;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+  height: 100dvh;
+  width: 100%;
+}

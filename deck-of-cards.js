@@ -14,16 +14,16 @@
 
 // https://deckofcardsapi.com/static/img/back.png
 
-// Utility function to set multiple styles on an element
+// Utility function to apply multiple styles to an element
 function setStyles(element, styles) {
-  Object.assign(element.style, styles); // Apply all styles from the styles object to the element
+  Object.assign(element.style, styles);
 }
 
-// Create an image element for a card using the card's JSON data
+// Create an image element for a card using its JSON data
 function getCardImage(json) {
   const img = document.createElement("img");
   img.src = json.image; // Set the card image URL
-  img.alt = `${json.value} of ${json.suit}`; // Set the alt text for accessibility
+  img.alt = `${json.value} of ${json.suit}`; // Set alt text for accessibility
   img.classList.add("card"); // Add the "card" class for styling
   img.setAttribute("data-pin-nopin", "true"); // Prevent Pinterest saving
   return img;
@@ -79,18 +79,33 @@ async function draw(drawCount = 1, deckId = "new") {
   return makeCall(drawCall, "Failed to draw cards."); // Call the API to draw cards
 }
 
+// Cache DOM elements to avoid repeated lookups
+const deck = document.getElementById("deck");
+const drawnCardsContainer = document.getElementById("drawn-cards-container");
+
+// Utility function to safely update the cursor style
+function updateCursorStyle(container, condition, styleIfTrue, styleIfFalse) {
+  container.style.cursor = condition ? styleIfTrue : styleIfFalse;
+}
+
+// Simplify repetitive logic for applying random transformations
+function generateRandomTransform(maxOffset, maxRotation) {
+  const x = Math.random() * maxOffset * 2 - maxOffset;
+  const y = Math.random() * maxOffset * 2 - maxOffset;
+  const r = Math.random() * maxRotation * 2 - maxRotation;
+  return { x, y, r };
+}
+
 // Display a drawn card in the drawn cards container
 function displayCard(card) {
-  const drawnCardsContainer = document.getElementById("drawn-cards-container");
   const cardImage = getCardImage(card);
 
-  // Ensure drawn cards are protected from Pinterest
-  cardImage.setAttribute("data-pin-nopin", "true");
-
   // Generate random offsets and rotation for a natural look
-  const randomTopOffset = Math.random() * 20 - 10; // Vertical offset between -10px and 10px
-  const randomLeftOffset = Math.random() * 20 - 10; // Horizontal offset between -10px and 10px
-  const randomRotation = Math.random() * 40 - 20; // Rotation between -20deg and 20deg
+  const {
+    x: randomLeftOffset,
+    y: randomTopOffset,
+    r: randomRotation,
+  } = generateRandomTransform(20, 40);
 
   // Apply styles for stacking and positioning
   setStyles(cardImage, {
@@ -161,8 +176,6 @@ function updateVisualDeck(remainingCards) {
 
 // Main event listener for the page
 document.addEventListener("DOMContentLoaded", async () => {
-  const deck = document.getElementById("deck");
-  const drawnCardsContainer = document.getElementById("drawn-cards-container");
   let deckId = null;
 
   // Hover module for random card transformations
@@ -175,7 +188,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     },
     applyTransform(el, { x, y, r }, scale = 1) {
       const base = el.dataset.baseTransform || "translate(-50%, -50%)";
-      el.style.transform = `${base} translate(${x}px, ${y}px) scale(${scale}) rotate(${r}deg)`;
+      const newTransform = `${base} translate(${x}px, ${y}px) scale(${scale}) rotate(${r}deg)`;
+      el.style.transform = newTransform;
+      el.dataset.lastTransform = newTransform; // Store the last applied transform
     },
   };
 
@@ -198,8 +213,12 @@ document.addEventListener("DOMContentLoaded", async () => {
           const response = await draw(1, deckId);
           updateVisualDeck(response.remaining);
           displayCard(response.cards[0]);
-          drawnCardsContainer.style.cursor =
-            response.remaining === 0 ? "pointer" : "default";
+          updateCursorStyle(
+            drawnCardsContainer,
+            response.remaining === 0,
+            "pointer",
+            "default"
+          );
         }
       } catch (error) {
         console.error("Error drawing card:", error);
@@ -233,7 +252,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         const target = e.target.closest(".deck-card");
         if (!target) return;
         target.style.transform =
-          target.dataset.baseTransform || "translate(-50%, -50%)";
+          target.dataset.lastTransform || target.dataset.baseTransform;
       });
       this.drawnEl.addEventListener("mouseover", (e) => {
         if (e.target === this.drawnEl) {
@@ -251,7 +270,7 @@ document.addEventListener("DOMContentLoaded", async () => {
           this.drawnEl.style.transform = "";
         } else if (e.target.classList.contains("card")) {
           e.target.style.transform =
-            e.target.dataset.baseTransform || "translate(-50%, -50%)";
+            e.target.dataset.lastTransform || e.target.dataset.baseTransform;
         }
       });
     },
