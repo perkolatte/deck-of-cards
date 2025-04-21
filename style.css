@@ -88,7 +88,7 @@ body {
   position: relative;
   align-self: center;
   justify-content: space-around;
-  width: clamp(120px, 60ddvw, 300px);
+  width: clamp(120px, 60dddvw, 300px);
   height: clamp(160px, 30dvh, 400px);
 }
 
@@ -97,12 +97,6 @@ body {
   transform: scale(1.05);
   transition: transform 0.2s ease-in-out;
 }
-
-/* Remove scaling on the deck container
-#deck:hover {
-  transform: none;
-  transition: none;
-} */
 
 /* -----------------------------------
    Card (Drawn) Styles
@@ -115,7 +109,7 @@ body {
   width: auto;
   height: auto;
   max-height: 100%;
-  max-width: clamp(120px, 60dvw, 300px);
+  max-width: clamp(120px, 60ddvw, 300px);
   transition: transform 0.4s cubic-bezier(0.32, 1, 0.23, 1),
     box-shadow 0.2s ease; /* Smooth animations */
   cursor: pointer;
@@ -137,7 +131,7 @@ body {
   width: auto;
   height: auto;
   max-height: 100%;
-  max-width: clamp(120px, 60ddvw, 300px);
+  max-width: clamp(120px, 60dddvw, 300px);
   transition: transform 0.2s, box-shadow 0.2s, opacity 0.2s;
   transform-origin: center center;
 }
@@ -199,8 +193,8 @@ body {
 }
 #drawn-cards-container,
 #deck {
-  width: 200px;
-  height: 266px;
+  width: 168px;
+  height: 224px;
 }
 
 /* Small landscape (S-land) */
@@ -215,8 +209,8 @@ body {
 
   #drawn-cards-container,
   #deck {
-    width: clamp(120px, 25dvh, 160px); /* Scale by height for small landscape */
-    height: clamp(80px, 20dvh, 120px); /* Adjust height for landscape */
+    width: clamp(100px, 25dvh, 160px); /* Scale by height for small landscape */
+    height: clamp(225px, 20dvh, 120px); /* Adjust height for landscape */
   }
 
   .card,
@@ -233,10 +227,11 @@ body {
   }
   #drawn-cards-container,
   #deck {
-    width: 240px;
-    height: 320px;
+    width: 200px;
+    height: 268px;
   }
 }
+u-8
 
 /* Tablet landscape & small desktop (M-land) */
 @media (min-width: 600px) and (orientation: landscape) {
@@ -251,11 +246,11 @@ body {
   #drawn-cards-container,
   #deck {
     width: clamp(
-      160px,
+      168px,
       30dvh,
       200px
     ); /* Scale by height for medium landscape */
-    height: clamp(100px, 25dvh, 150px); /* Adjust height for medium landscape */
+    height: clamp(225px, 25dvh, 150px); /* Adjust height for medium landscape */
   }
 
   .card,
@@ -295,8 +290,23 @@ body {
   }
   #drawn-cards-container,
   #deck {
-    width: 225px;
-    height: 300px;
+    width: 201px;
+    height: 268px;
+  }
+}
+
+/* Increase card size for small screens (e.g., iPhones) */
+@media (max-width: 375px) {
+  #drawn-cards-container,
+  #deck {
+    width: clamp(75px, 50dvw, 150); /* Increase width for small screens */
+    height: clamp(100px, 50vh, 200px); /* Increase height for small screens */
+  }
+
+  .card,
+  .deck-card {
+    max-width: 100%; /* Ensure cards fit within the container */
+    max-height: 100%; /* Ensure cards maintain aspect ratio */
   }
 }
 
@@ -317,7 +327,7 @@ body {
   width: auto;
   height: auto;
   max-height: 100%;
-  max-width: clamp(120px, 60dvw, 300px);
+  max-width: clamp(120px, 60ddvw, 300px);
   border-radius: 8px; /* Rounded edges */
   display: block;
   object-fit: contain; /* Preserve aspect ratio */

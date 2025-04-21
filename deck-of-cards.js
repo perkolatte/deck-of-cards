@@ -12,8 +12,6 @@
 //    and show a button on the page that will let you draw a card.
 //    Every time you click the button, display a new card, until there are no cards left in the deck.
 
-// https://deckofcardsapi.com/static/img/back.png
-
 // Utility function to apply multiple styles to an element
 function setStyles(element, styles) {
   Object.assign(element.style, styles);
